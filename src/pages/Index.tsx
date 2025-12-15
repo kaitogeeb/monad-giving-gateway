@@ -4,6 +4,7 @@ import { WalletBalance } from '@/components/WalletBalance';
 import { DonateButton } from '@/components/DonateButton';
 import { AnimatedBackground } from '@/components/AnimatedBackground';
 import { Heart, Globe, Users } from 'lucide-react';
+import monadLogo from '@/assets/monad-logo.png';
 
 const Index = () => {
   const { authenticated } = usePrivy();
@@ -15,8 +16,8 @@ const Index = () => {
       <header className="sticky top-0 z-50 bg-transparent">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Heart className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold text-foreground">MONAD</span>
+            <img src={monadLogo} alt="MONAD Logo" className="h-10 w-10" />
+            <span className="text-xl font-bold text-white">MONAD</span>
           </div>
           <ConnectWallet />
         </div>
@@ -25,10 +26,10 @@ const Index = () => {
       {/* Hero Section */}
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto text-center mb-12">
-          <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
             Make a <span className="text-primary">Difference</span> Today
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-white/80 max-w-2xl mx-auto">
             Join our community of donors using Monad blockchain to grow and contribute 
             to meaningful causes. Every donation counts.
           </p>
@@ -38,18 +39,18 @@ const Index = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           <div className="bg-transparent backdrop-blur-sm border border-white/20 rounded-xl p-6 text-center">
             <Users className="h-10 w-10 text-primary mx-auto mb-3" />
-            <div className="text-3xl font-bold text-foreground">1,234</div>
-            <div className="text-muted-foreground">Active Donors</div>
+            <div className="text-3xl font-bold text-white">1,234</div>
+            <div className="text-white/70">Active Donors</div>
           </div>
           <div className="bg-transparent backdrop-blur-sm border border-white/20 rounded-xl p-6 text-center">
             <Heart className="h-10 w-10 text-primary mx-auto mb-3" />
-            <div className="text-3xl font-bold text-foreground">50,000</div>
-            <div className="text-muted-foreground">MON Donated</div>
+            <div className="text-3xl font-bold text-white">50,000</div>
+            <div className="text-white/70">MON Donated</div>
           </div>
           <div className="bg-transparent backdrop-blur-sm border border-white/20 rounded-xl p-6 text-center">
             <Globe className="h-10 w-10 text-primary mx-auto mb-3" />
-            <div className="text-3xl font-bold text-foreground">25</div>
-            <div className="text-muted-foreground">Projects Funded</div>
+            <div className="text-3xl font-bold text-white">25</div>
+            <div className="text-white/70">Projects Funded</div>
           </div>
         </div>
 
@@ -58,10 +59,10 @@ const Index = () => {
           {authenticated && <WalletBalance />}
           
           <div className="bg-transparent backdrop-blur-sm border border-white/20 rounded-xl p-6">
-            <h2 className="text-2xl font-bold text-foreground mb-4 text-center">
+            <h2 className="text-2xl font-bold text-white mb-4 text-center">
               {authenticated ? 'Ready to Donate?' : 'Connect to Start'}
             </h2>
-            <p className="text-muted-foreground text-center mb-6">
+            <p className="text-white/80 text-center mb-6">
               {authenticated
                 ? 'Click below to sign a message and begin your donation journey'
                 : 'Connect your Monad wallet to view your balance and make a donation'}
@@ -79,7 +80,7 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="border-t border-white/10 mt-20 py-8 bg-transparent">
-        <div className="container mx-auto px-4 text-center text-muted-foreground">
+        <div className="container mx-auto px-4 text-center text-white/70">
           <p>© 2024 MONAD. Built on Monad.</p>
         </div>
       </footer>

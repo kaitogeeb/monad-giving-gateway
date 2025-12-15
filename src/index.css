@@ -147,3 +147,18 @@ All colors MUST be HSL.
 .animate-grain {
   animation: grain 1.2s steps(4) infinite;
 }
+
+@keyframes explosion {
+  0% {
+    transform: scale(0.3);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.animate-explosion {
+  animation: explosion 3s ease-out infinite;
+}

@@ -12,14 +12,13 @@ const fragmentShaderSource = `
   uniform vec2 u_resolution;
   uniform float u_time;
   
-  // Colors - matching reference image
-  const vec3 coreColor = vec3(0.52, 0.42, 0.98);       // Bright violet center
-  const vec3 midColor = vec3(0.45, 0.32, 0.85);        // Mid violet
-  const vec3 outerColor = vec3(0.25, 0.15, 0.55);      // Outer violet
-  const vec3 deepColor = vec3(0.08, 0.04, 0.18);       // Deep purple edge
+  // Colors
+  const vec3 coreColor = vec3(0.52, 0.42, 0.98);
+  const vec3 midColor = vec3(0.45, 0.32, 0.85);
+  const vec3 outerColor = vec3(0.25, 0.15, 0.55);
+  const vec3 deepColor = vec3(0.08, 0.04, 0.18);
   const vec3 blackColor = vec3(0.0, 0.0, 0.0);
   
-  // Improved noise functions
   float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
   }
@@ -47,83 +46,86 @@ const fragmentShaderSource = `
     return value;
   }
   
+  // Single explosion wave
+  float explosionWave(vec2 pos, float r, float phase, float rotOffset) {
+    float waveRadius = mod(phase, 1.0);
+    float waveIntensity = 1.0 - waveRadius;
+    waveIntensity = pow(waveIntensity, 0.5);
+    
+    float thickness = 0.15 + 0.1 * waveRadius;
+    float wave = smoothstep(waveRadius - thickness, waveRadius, r) * 
+                 smoothstep(waveRadius + thickness * 0.5, waveRadius, r);
+    
+    float theta = atan(pos.y, pos.x);
+    float rayCount = 28.0;
+    float ray1 = pow(abs(sin(rayCount * (theta + rotOffset))), 3.0);
+    float ray2 = pow(abs(sin((rayCount * 0.5) * (theta + rotOffset * 0.7 + 0.5))), 4.0) * 0.6;
+    float rayNoise = fbm(vec2(theta * 4.0 + phase * 2.0, r * 3.0));
+    float rays = (ray1 + ray2) * rayNoise * wave;
+    
+    float glow = exp(-r * 4.0 / (0.3 + waveRadius * 0.7)) * waveIntensity;
+    
+    return (wave * 0.6 + rays * 0.4 + glow * 0.5) * waveIntensity;
+  }
+  
   void main() {
     vec2 uv = gl_FragCoord.xy / u_resolution;
     vec2 center = vec2(0.5, 0.5);
     vec2 pos = uv - center;
     
-    // Aspect ratio correction
     float aspect = u_resolution.x / u_resolution.y;
     pos.x *= aspect;
     
     float r = length(pos);
     float theta = atan(pos.y, pos.x);
     
-    // Breathing animation - subtle
-    float breathe = 1.0 + 0.02 * sin(u_time * 1.047);
+    // Multiple explosion waves with different phases
+    float cycleDuration = 3.0;
+    float phase1 = mod(u_time / cycleDuration, 1.0);
+    float phase2 = mod(u_time / cycleDuration + 0.33, 1.0);
+    float phase3 = mod(u_time / cycleDuration + 0.66, 1.0);
     
-    // Rotation animation for rays
-    float rotationOffset = u_time * 0.15;
+    float rotSpeed = 0.15;
+    float rot1 = u_time * rotSpeed;
+    float rot2 = u_time * rotSpeed * 0.8 + 1.0;
+    float rot3 = u_time * rotSpeed * 1.2 + 2.0;
     
-    // Core glow - larger and brighter center
-    float coreRadius = 0.28 * breathe;
-    float glow = 1.0 - smoothstep(0.0, coreRadius + 0.35, r);
-    glow = pow(glow, 0.6);
+    float wave1 = explosionWave(pos, r, phase1, rot1);
+    float wave2 = explosionWave(pos, r, phase2, rot2);
+    float wave3 = explosionWave(pos, r, phase3, rot3);
     
-    // More prominent rays with irregular lengths - 24-36 rays
-    float rayCount = 28.0;
-    float rays = 0.0;
+    float combined = wave1 + wave2 + wave3;
     
-    // Multiple ray layers for irregularity
-    float ray1 = pow(abs(sin(rayCount * (theta + rotationOffset))), 3.0);
-    float ray2 = pow(abs(sin((rayCount * 0.5) * (theta + rotationOffset * 0.7 + 0.5))), 4.0) * 0.6;
-    float ray3 = pow(abs(sin((rayCount * 1.5) * (theta + rotationOffset * 1.3))), 5.0) * 0.4;
+    // Central glow that pulses
+    float centralPhase = mod(u_time / cycleDuration, 1.0);
+    float centralGlow = exp(-r * 8.0) * (1.0 - centralPhase) * 2.0;
+    combined += centralGlow;
     
-    // Apply fBM noise for irregularity
-    float rayNoise = fbm(vec2(theta * 4.0 + u_time * 0.05, r * 3.0));
-    rays = (ray1 + ray2 + ray3) * rayNoise;
-    
-    // Rays should extend outward from the glow edge
-    float rayMask = smoothstep(0.1, 0.22, r) * smoothstep(0.7, 0.25, r);
-    rays *= rayMask * 0.8;
-    
-    // Bias rays to be brighter/longer on right and lower sections
-    float rayBias = 1.0 + 0.3 * sin(theta - 0.5) + 0.2 * cos(theta * 2.0);
-    rays *= rayBias;
-    
-    // Combine glow and rays
-    float combined = glow + rays * 0.5;
-    
-    // Posterization/banding effect - 14-18 levels
+    // Banding
     float bands = 16.0;
     float bandedValue = floor(combined * bands + 0.5) / bands;
-    combined = mix(combined, bandedValue, 0.7);
+    combined = mix(combined, bandedValue, 0.6);
     
-    // Micro flicker
-    float flicker = 1.0 + 0.015 * sin(u_time * 3.1) * sin(u_time * 4.7);
+    // Flicker
+    float flicker = 1.0 + 0.02 * sin(u_time * 3.1) * sin(u_time * 4.7);
     combined *= flicker;
     
-    // Color gradient from center outward
+    // Color gradient
     vec3 color = coreColor;
-    color = mix(coreColor, midColor, smoothstep(0.0, 0.15, r));
-    color = mix(color, outerColor, smoothstep(0.15, 0.35, r));
-    color = mix(color, deepColor, smoothstep(0.3, 0.55, r));
+    color = mix(coreColor, midColor, smoothstep(0.0, 0.2, r));
+    color = mix(color, outerColor, smoothstep(0.2, 0.4, r));
+    color = mix(color, deepColor, smoothstep(0.35, 0.6, r));
     
-    // Apply brightness from combined glow/rays
-    color *= combined * 1.4;
+    color *= combined * 1.2;
     
-    // Strong vignette to black corners
-    float vignette = 1.0 - smoothstep(0.3, 0.85, r);
-    vignette = pow(vignette, 0.8);
+    // Vignette
+    float vignette = 1.0 - smoothstep(0.35, 0.9, r);
+    vignette = pow(vignette, 0.7);
     color = mix(blackColor, color, vignette);
     
-    // Subtle grain
+    // Grain
     float grain = hash(uv * u_resolution + u_time * 100.0);
-    color += (grain - 0.5) * 0.06;
-    
-    // Very subtle scanlines
-    float scanline = sin(gl_FragCoord.y * 1.5) * 0.015;
-    color -= scanline;
+    color += (grain - 0.5) * 0.05;
     
     gl_FragColor = vec4(color, 1.0);
   }
@@ -147,7 +149,6 @@ export const AnimatedBackground = () => {
       return;
     }
 
-    // Create shaders
     const vertexShader = gl.createShader(gl.VERTEX_SHADER)!;
     gl.shaderSource(vertexShader, vertexShaderSource);
     gl.compileShader(vertexShader);
@@ -156,14 +157,12 @@ export const AnimatedBackground = () => {
     gl.shaderSource(fragmentShader, fragmentShaderSource);
     gl.compileShader(fragmentShader);
 
-    // Create program
     const program = gl.createProgram()!;
     gl.attachShader(program, vertexShader);
     gl.attachShader(program, fragmentShader);
     gl.linkProgram(program);
     gl.useProgram(program);
 
-    // Set up geometry
     const positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
@@ -175,7 +174,6 @@ export const AnimatedBackground = () => {
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
-    // Get uniform locations
     const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
     const timeLocation = gl.getUniformLocation(program, 'u_time');
 
@@ -218,9 +216,8 @@ export const AnimatedBackground = () => {
 const CSSFallbackBackground = ({ reducedMotion }: { reducedMotion: boolean }) => {
   return (
     <div className="fixed inset-0 w-full h-full -z-10 overflow-hidden bg-black">
-      {/* Glow layer */}
       <div 
-        className={`absolute inset-0 ${reducedMotion ? '' : 'animate-glow-breathe'}`}
+        className={`absolute inset-0 ${reducedMotion ? '' : 'animate-explosion'}`}
         style={{
           background: `
             radial-gradient(ellipse 45% 45% at 50% 50%, 
@@ -237,80 +234,6 @@ const CSSFallbackBackground = ({ reducedMotion }: { reducedMotion: boolean }) =>
           filter: 'contrast(1.2)'
         }}
       />
-      
-      {/* Rays layer */}
-      <div 
-        className={`absolute inset-0 ${reducedMotion ? '' : 'animate-rays-rotate'}`}
-        style={{
-          background: `
-            conic-gradient(
-              from 0deg at 50% 50%,
-              transparent 0deg,
-              rgba(140, 120, 255, 0.4) 3deg,
-              transparent 8deg,
-              transparent 12deg,
-              rgba(140, 120, 255, 0.35) 15deg,
-              transparent 20deg,
-              transparent 28deg,
-              rgba(140, 120, 255, 0.45) 32deg,
-              transparent 38deg,
-              transparent 48deg,
-              rgba(140, 120, 255, 0.3) 52deg,
-              transparent 58deg,
-              transparent 68deg,
-              rgba(140, 120, 255, 0.4) 72deg,
-              transparent 78deg,
-              transparent 88deg,
-              rgba(140, 120, 255, 0.35) 92deg,
-              transparent 98deg,
-              transparent 110deg,
-              rgba(140, 120, 255, 0.5) 114deg,
-              transparent 120deg,
-              transparent 132deg,
-              rgba(140, 120, 255, 0.3) 136deg,
-              transparent 142deg,
-              transparent 155deg,
-              rgba(140, 120, 255, 0.4) 160deg,
-              transparent 166deg,
-              transparent 178deg,
-              rgba(140, 120, 255, 0.35) 182deg,
-              transparent 188deg,
-              transparent 200deg,
-              rgba(140, 120, 255, 0.45) 205deg,
-              transparent 212deg,
-              transparent 225deg,
-              rgba(140, 120, 255, 0.3) 230deg,
-              transparent 238deg,
-              transparent 252deg,
-              rgba(140, 120, 255, 0.4) 258deg,
-              transparent 265deg,
-              transparent 278deg,
-              rgba(140, 120, 255, 0.35) 284deg,
-              transparent 292deg,
-              transparent 308deg,
-              rgba(140, 120, 255, 0.45) 315deg,
-              transparent 322deg,
-              transparent 338deg,
-              rgba(140, 120, 255, 0.3) 345deg,
-              transparent 352deg,
-              transparent 360deg
-            )
-          `,
-          filter: 'blur(6px)',
-          mask: 'radial-gradient(ellipse 55% 55% at 50% 50%, transparent 15%, white 35%, transparent 75%)'
-        }}
-      />
-      
-      {/* Grain overlay */}
-      <div 
-        className={`absolute inset-0 opacity-[0.06] ${reducedMotion ? '' : 'animate-grain'}`}
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-          backgroundSize: '150px 150px'
-        }}
-      />
-      
-      {/* Strong vignette */}
       <div 
         className="absolute inset-0"
         style={{
