@@ -2,13 +2,15 @@ import { usePrivy } from '@privy-io/react-auth';
 import { ConnectWallet } from '@/components/ConnectWallet';
 import { WalletBalance } from '@/components/WalletBalance';
 import { DonateButton } from '@/components/DonateButton';
+import { AnimatedBackground } from '@/components/AnimatedBackground';
 import { Heart, Globe, Users } from 'lucide-react';
 
 const Index = () => {
   const { authenticated } = usePrivy();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="min-h-screen relative">
+      <AnimatedBackground />
       {/* Header */}
       <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">

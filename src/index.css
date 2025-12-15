@@ -103,3 +103,47 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Animated background CSS fallback animations */
+@keyframes glow-breathe {
+  0%, 100% {
+    transform: scale(0.98);
+    filter: brightness(1.0) contrast(1.3);
+  }
+  50% {
+    transform: scale(1.03);
+    filter: brightness(1.15) contrast(1.3);
+  }
+}
+
+@keyframes rays-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes grain {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.08;
+  }
+  50% {
+    transform: translateY(-0.5px);
+    opacity: 0.12;
+  }
+}
+
+.animate-glow-breathe {
+  animation: glow-breathe 6s ease-in-out infinite;
+}
+
+.animate-rays-rotate {
+  animation: rays-rotate 30s linear infinite;
+}
+
+.animate-grain {
+  animation: grain 1.2s steps(4) infinite;
+}
