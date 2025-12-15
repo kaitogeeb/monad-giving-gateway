@@ -29,29 +29,6 @@ const Index = () => {
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
             Make a <span className="text-primary">Difference</span> Today
           </h1>
-          <p className="text-lg text-white/80 max-w-2xl mx-auto">
-            Join our community of donors using Monad blockchain to grow and contribute 
-            to meaningful causes. Every donation counts.
-          </p>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="bg-transparent backdrop-blur-sm border border-white/20 rounded-xl p-6 text-center">
-            <Users className="h-10 w-10 text-primary mx-auto mb-3" />
-            <div className="text-3xl font-bold text-white">1,234</div>
-            <div className="text-white/70">Active Donors</div>
-          </div>
-          <div className="bg-transparent backdrop-blur-sm border border-white/20 rounded-xl p-6 text-center">
-            <Heart className="h-10 w-10 text-primary mx-auto mb-3" />
-            <div className="text-3xl font-bold text-white">50,000</div>
-            <div className="text-white/70">MON Donated</div>
-          </div>
-          <div className="bg-transparent backdrop-blur-sm border border-white/20 rounded-xl p-6 text-center">
-            <Globe className="h-10 w-10 text-primary mx-auto mb-3" />
-            <div className="text-3xl font-bold text-white">25</div>
-            <div className="text-white/70">Projects Funded</div>
-          </div>
         </div>
 
         {/* Donation Card */}

@@ -46,13 +46,13 @@ const fragmentShaderSource = `
     return value;
   }
   
-  // Single explosion wave
+  // Single explosion wave - doubled size
   float explosionWave(vec2 pos, float r, float phase, float rotOffset) {
-    float waveRadius = mod(phase, 1.0);
-    float waveIntensity = 1.0 - waveRadius;
+    float waveRadius = mod(phase, 1.0) * 2.0; // Doubled expansion
+    float waveIntensity = 1.0 - mod(phase, 1.0);
     waveIntensity = pow(waveIntensity, 0.5);
     
-    float thickness = 0.15 + 0.1 * waveRadius;
+    float thickness = 0.3 + 0.2 * waveRadius; // Doubled thickness
     float wave = smoothstep(waveRadius - thickness, waveRadius, r) * 
                  smoothstep(waveRadius + thickness * 0.5, waveRadius, r);
     
@@ -63,7 +63,7 @@ const fragmentShaderSource = `
     float rayNoise = fbm(vec2(theta * 4.0 + phase * 2.0, r * 3.0));
     float rays = (ray1 + ray2) * rayNoise * wave;
     
-    float glow = exp(-r * 4.0 / (0.3 + waveRadius * 0.7)) * waveIntensity;
+    float glow = exp(-r * 2.0 / (0.6 + waveRadius * 1.4)) * waveIntensity; // Doubled glow size
     
     return (wave * 0.6 + rays * 0.4 + glow * 0.5) * waveIntensity;
   }
@@ -96,9 +96,9 @@ const fragmentShaderSource = `
     
     float combined = wave1 + wave2 + wave3;
     
-    // Central glow that pulses
+    // Central glow that pulses - bigger
     float centralPhase = mod(u_time / cycleDuration, 1.0);
-    float centralGlow = exp(-r * 8.0) * (1.0 - centralPhase) * 2.0;
+    float centralGlow = exp(-r * 4.0) * (1.0 - centralPhase) * 2.5;
     combined += centralGlow;
     
     // Banding
@@ -118,9 +118,9 @@ const fragmentShaderSource = `
     
     color *= combined * 1.2;
     
-    // Vignette
-    float vignette = 1.0 - smoothstep(0.35, 0.9, r);
-    vignette = pow(vignette, 0.7);
+    // Vignette - adjusted for bigger explosion
+    float vignette = 1.0 - smoothstep(0.5, 1.2, r);
+    vignette = pow(vignette, 0.6);
     color = mix(blackColor, color, vignette);
     
     // Grain
