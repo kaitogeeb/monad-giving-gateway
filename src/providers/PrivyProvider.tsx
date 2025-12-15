@@ -1,10 +1,10 @@
 import { PrivyProvider as Privy } from '@privy-io/react-auth';
 import { ReactNode } from 'react';
 
-const monadTestnet = {
-  id: 10143,
-  name: 'Monad Testnet',
-  network: 'monad-testnet',
+const monadNetwork = {
+  id: 143,
+  name: 'Monad',
+  network: 'monad',
   nativeCurrency: {
     decimals: 18,
     name: 'Monad',
@@ -12,14 +12,14 @@ const monadTestnet = {
   },
   rpcUrls: {
     default: {
-      http: ['https://testnet-rpc.monad.xyz'],
+      http: ['https://rpc.monad.xyz'],
     },
     public: {
-      http: ['https://testnet-rpc.monad.xyz'],
+      http: ['https://rpc.monad.xyz'],
     },
   },
   blockExplorers: {
-    default: { name: 'Monad Explorer', url: 'https://testnet.monadexplorer.com' },
+    default: { name: 'Monad Explorer', url: 'https://explorer.monad.xyz' },
   },
 };
 
@@ -37,8 +37,8 @@ export const PrivyProvider = ({ children }: PrivyProviderProps) => {
           theme: 'dark',
           accentColor: '#8B5CF6',
         },
-        defaultChain: monadTestnet,
-        supportedChains: [monadTestnet],
+        defaultChain: monadNetwork,
+        supportedChains: [monadNetwork],
       }}
     >
       {children}
