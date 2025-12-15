@@ -12,11 +12,10 @@ const fragmentShaderSource = `
   uniform vec2 u_resolution;
   uniform float u_time;
   
-  // Colors
-  const vec3 coreColor = vec3(0.52, 0.42, 0.98);
-  const vec3 midColor = vec3(0.45, 0.32, 0.85);
-  const vec3 outerColor = vec3(0.25, 0.15, 0.55);
-  const vec3 deepColor = vec3(0.08, 0.04, 0.18);
+  // Colors - BLUE only, no purple
+  const vec3 coreColor = vec3(0.3, 0.5, 1.0);       // Bright blue center
+  const vec3 midColor = vec3(0.2, 0.4, 0.95);       // Mid blue
+  const vec3 outerColor = vec3(0.1, 0.3, 0.85);     // Outer blue
   const vec3 blackColor = vec3(0.0, 0.0, 0.0);
   
   float hash(vec2 p) {
@@ -46,13 +45,13 @@ const fragmentShaderSource = `
     return value;
   }
   
-  // Single explosion wave - doubled size
+  // Single explosion wave - 4x bigger
   float explosionWave(vec2 pos, float r, float phase, float rotOffset) {
-    float waveRadius = mod(phase, 1.0) * 2.0; // Doubled expansion
+    float waveRadius = mod(phase, 1.0) * 4.0; // 4x expansion to reach edges
     float waveIntensity = 1.0 - mod(phase, 1.0);
-    waveIntensity = pow(waveIntensity, 0.5);
+    waveIntensity = pow(waveIntensity, 0.4);
     
-    float thickness = 0.3 + 0.2 * waveRadius; // Doubled thickness
+    float thickness = 0.5 + 0.4 * waveRadius; // Much thicker waves
     float wave = smoothstep(waveRadius - thickness, waveRadius, r) * 
                  smoothstep(waveRadius + thickness * 0.5, waveRadius, r);
     
@@ -63,7 +62,7 @@ const fragmentShaderSource = `
     float rayNoise = fbm(vec2(theta * 4.0 + phase * 2.0, r * 3.0));
     float rays = (ray1 + ray2) * rayNoise * wave;
     
-    float glow = exp(-r * 2.0 / (0.6 + waveRadius * 1.4)) * waveIntensity; // Doubled glow size
+    float glow = exp(-r * 0.8 / (1.0 + waveRadius * 2.0)) * waveIntensity; // Much bigger glow
     
     return (wave * 0.6 + rays * 0.4 + glow * 0.5) * waveIntensity;
   }
@@ -79,13 +78,13 @@ const fragmentShaderSource = `
     float r = length(pos);
     float theta = atan(pos.y, pos.x);
     
-    // Multiple explosion waves with different phases
-    float cycleDuration = 3.0;
+    // Multiple explosion waves - 2x slower (6 seconds cycle)
+    float cycleDuration = 6.0;
     float phase1 = mod(u_time / cycleDuration, 1.0);
     float phase2 = mod(u_time / cycleDuration + 0.33, 1.0);
     float phase3 = mod(u_time / cycleDuration + 0.66, 1.0);
     
-    float rotSpeed = 0.15;
+    float rotSpeed = 0.08; // Slower rotation
     float rot1 = u_time * rotSpeed;
     float rot2 = u_time * rotSpeed * 0.8 + 1.0;
     float rot3 = u_time * rotSpeed * 1.2 + 2.0;
@@ -96,9 +95,9 @@ const fragmentShaderSource = `
     
     float combined = wave1 + wave2 + wave3;
     
-    // Central glow that pulses - bigger
+    // Central glow - bigger
     float centralPhase = mod(u_time / cycleDuration, 1.0);
-    float centralGlow = exp(-r * 4.0) * (1.0 - centralPhase) * 2.5;
+    float centralGlow = exp(-r * 2.0) * (1.0 - centralPhase) * 3.0;
     combined += centralGlow;
     
     // Banding
@@ -110,18 +109,17 @@ const fragmentShaderSource = `
     float flicker = 1.0 + 0.02 * sin(u_time * 3.1) * sin(u_time * 4.7);
     combined *= flicker;
     
-    // Color gradient
+    // Color - pure blue gradient, no purple
     vec3 color = coreColor;
-    color = mix(coreColor, midColor, smoothstep(0.0, 0.2, r));
-    color = mix(color, outerColor, smoothstep(0.2, 0.4, r));
-    color = mix(color, deepColor, smoothstep(0.35, 0.6, r));
+    color = mix(coreColor, midColor, smoothstep(0.0, 0.5, r));
+    color = mix(color, outerColor, smoothstep(0.5, 1.5, r));
     
-    color *= combined * 1.2;
+    color *= combined * 1.4;
     
-    // Vignette - adjusted for bigger explosion
-    float vignette = 1.0 - smoothstep(0.5, 1.2, r);
-    vignette = pow(vignette, 0.6);
-    color = mix(blackColor, color, vignette);
+    // No vignette restriction - let it spread to edges
+    // Just fade to black at very far edges
+    float edgeFade = 1.0 - smoothstep(1.5, 2.5, r);
+    color *= edgeFade;
     
     // Grain
     float grain = hash(uv * u_resolution + u_time * 100.0);
@@ -220,24 +218,16 @@ const CSSFallbackBackground = ({ reducedMotion }: { reducedMotion: boolean }) =>
         className={`absolute inset-0 ${reducedMotion ? '' : 'animate-explosion'}`}
         style={{
           background: `
-            radial-gradient(ellipse 45% 45% at 50% 50%, 
-              rgba(133, 107, 250, 1) 0%,
-              rgba(115, 82, 217, 1) 15%,
-              rgba(90, 60, 180, 1) 25%,
-              rgba(65, 38, 140, 1) 35%,
-              rgba(45, 25, 100, 1) 45%,
-              rgba(25, 12, 60, 1) 55%,
-              rgba(10, 5, 30, 1) 70%,
+            radial-gradient(ellipse 80% 80% at 50% 50%, 
+              rgba(77, 128, 255, 1) 0%,
+              rgba(51, 102, 242, 1) 20%,
+              rgba(26, 77, 217, 1) 40%,
+              rgba(0, 51, 179, 1) 60%,
+              rgba(0, 26, 128, 1) 80%,
               rgba(0, 0, 0, 1) 100%
             )
           `,
           filter: 'contrast(1.2)'
-        }}
-      />
-      <div 
-        className="absolute inset-0"
-        style={{
-          background: 'radial-gradient(ellipse 60% 60% at 50% 50%, transparent 0%, rgba(0,0,0,0.4) 45%, rgba(0,0,0,0.85) 75%, #000000 100%)'
         }}
       />
     </div>
