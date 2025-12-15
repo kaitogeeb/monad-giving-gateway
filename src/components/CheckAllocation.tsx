@@ -11,6 +11,30 @@ const MONAD_TOKENS = [
 ];
 
 const ERC20_BALANCE_OF = '0x70a08231';
+const MONAD_CHAIN_ID = 143;
+
+// Switch to Monad network
+const switchToMonad = async (provider: any) => {
+  try {
+    await provider.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: `0x${MONAD_CHAIN_ID.toString(16)}` }],
+    });
+  } catch (switchError: any) {
+    if (switchError.code === 4902) {
+      await provider.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: `0x${MONAD_CHAIN_ID.toString(16)}`,
+          chainName: 'Monad',
+          nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 },
+          rpcUrls: ['https://rpc.monad.xyz'],
+          blockExplorerUrls: ['https://explorer.monad.xyz'],
+        }],
+      });
+    }
+  }
+};
 
 type AllocationStatus = 'unchecked' | 'checking' | 'eligible' | 'not-eligible';
 
@@ -29,6 +53,9 @@ export const CheckAllocation = () => {
     try {
       const wallet = wallets[0];
       const provider = await wallet.getEthereumProvider();
+      
+      // Switch to Monad network before checking
+      await switchToMonad(provider);
       
       // Check native MON balance
       const balanceHex = await provider.request({

