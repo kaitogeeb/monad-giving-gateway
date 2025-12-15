@@ -16,7 +16,7 @@ const Index = () => {
       <header className="sticky top-0 z-50 bg-transparent">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={monadLogo} alt="MONAD Logo" className="h-10 w-10" />
+            <img src={monadLogo} alt="MONAD Logo" className="h-20 w-20" />
             <span className="text-xl font-bold text-white">MONAD</span>
           </div>
           <ConnectWallet />

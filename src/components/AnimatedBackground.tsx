@@ -12,10 +12,10 @@ const fragmentShaderSource = `
   uniform vec2 u_resolution;
   uniform float u_time;
   
-  // Colors - BLUE only, no purple
-  const vec3 coreColor = vec3(0.3, 0.5, 1.0);       // Bright blue center
-  const vec3 midColor = vec3(0.2, 0.4, 0.95);       // Mid blue
-  const vec3 outerColor = vec3(0.1, 0.3, 0.85);     // Outer blue
+  // Colors - DARK BLUE only
+  const vec3 coreColor = vec3(0.0, 0.15, 0.4);       // Dark blue center
+  const vec3 midColor = vec3(0.0, 0.1, 0.3);         // Darker blue
+  const vec3 outerColor = vec3(0.0, 0.05, 0.2);      // Very dark blue
   const vec3 blackColor = vec3(0.0, 0.0, 0.0);
   
   float hash(vec2 p) {
@@ -45,13 +45,13 @@ const fragmentShaderSource = `
     return value;
   }
   
-  // Single explosion wave - 4x bigger
+  // Blue explosion wave
   float explosionWave(vec2 pos, float r, float phase, float rotOffset) {
-    float waveRadius = mod(phase, 1.0) * 4.0; // 4x expansion to reach edges
+    float waveRadius = mod(phase, 1.0) * 4.0;
     float waveIntensity = 1.0 - mod(phase, 1.0);
     waveIntensity = pow(waveIntensity, 0.4);
     
-    float thickness = 0.5 + 0.4 * waveRadius; // Much thicker waves
+    float thickness = 0.5 + 0.4 * waveRadius;
     float wave = smoothstep(waveRadius - thickness, waveRadius, r) * 
                  smoothstep(waveRadius + thickness * 0.5, waveRadius, r);
     
@@ -62,9 +62,28 @@ const fragmentShaderSource = `
     float rayNoise = fbm(vec2(theta * 4.0 + phase * 2.0, r * 3.0));
     float rays = (ray1 + ray2) * rayNoise * wave;
     
-    float glow = exp(-r * 0.8 / (1.0 + waveRadius * 2.0)) * waveIntensity; // Much bigger glow
+    float glow = exp(-r * 0.8 / (1.0 + waveRadius * 2.0)) * waveIntensity;
     
     return (wave * 0.6 + rays * 0.4 + glow * 0.5) * waveIntensity;
+  }
+  
+  // Dark/black explosion wave
+  float darkExplosionWave(vec2 pos, float r, float phase, float rotOffset) {
+    float waveRadius = mod(phase, 1.0) * 4.0;
+    float waveIntensity = 1.0 - mod(phase, 1.0);
+    waveIntensity = pow(waveIntensity, 0.5);
+    
+    float thickness = 0.4 + 0.3 * waveRadius;
+    float wave = smoothstep(waveRadius - thickness, waveRadius, r) * 
+                 smoothstep(waveRadius + thickness * 0.5, waveRadius, r);
+    
+    float theta = atan(pos.y, pos.x);
+    float rayCount = 24.0;
+    float ray1 = pow(abs(sin(rayCount * (theta + rotOffset))), 4.0);
+    float rayNoise = fbm(vec2(theta * 3.0 + phase * 1.5, r * 2.5));
+    float rays = ray1 * rayNoise * wave;
+    
+    return (wave * 0.7 + rays * 0.3) * waveIntensity;
   }
   
   void main() {
@@ -78,52 +97,67 @@ const fragmentShaderSource = `
     float r = length(pos);
     float theta = atan(pos.y, pos.x);
     
-    // Multiple explosion waves - 2x slower (6 seconds cycle)
+    // Blue explosion waves
     float cycleDuration = 6.0;
     float phase1 = mod(u_time / cycleDuration, 1.0);
     float phase2 = mod(u_time / cycleDuration + 0.33, 1.0);
     float phase3 = mod(u_time / cycleDuration + 0.66, 1.0);
     
-    float rotSpeed = 0.08; // Slower rotation
+    // Dark explosion waves - offset between blue ones
+    float darkPhase1 = mod(u_time / cycleDuration + 0.165, 1.0);
+    float darkPhase2 = mod(u_time / cycleDuration + 0.495, 1.0);
+    float darkPhase3 = mod(u_time / cycleDuration + 0.825, 1.0);
+    
+    float rotSpeed = 0.08;
     float rot1 = u_time * rotSpeed;
     float rot2 = u_time * rotSpeed * 0.8 + 1.0;
     float rot3 = u_time * rotSpeed * 1.2 + 2.0;
+    float darkRot1 = u_time * rotSpeed * 0.6 + 0.5;
+    float darkRot2 = u_time * rotSpeed * 1.0 + 1.5;
+    float darkRot3 = u_time * rotSpeed * 0.9 + 2.5;
     
+    // Blue waves
     float wave1 = explosionWave(pos, r, phase1, rot1);
     float wave2 = explosionWave(pos, r, phase2, rot2);
     float wave3 = explosionWave(pos, r, phase3, rot3);
+    float blueWaves = wave1 + wave2 + wave3;
     
-    float combined = wave1 + wave2 + wave3;
+    // Dark waves
+    float dark1 = darkExplosionWave(pos, r, darkPhase1, darkRot1);
+    float dark2 = darkExplosionWave(pos, r, darkPhase2, darkRot2);
+    float dark3 = darkExplosionWave(pos, r, darkPhase3, darkRot3);
+    float darkWaves = dark1 + dark2 + dark3;
     
-    // Central glow - bigger
+    // Central glow
     float centralPhase = mod(u_time / cycleDuration, 1.0);
     float centralGlow = exp(-r * 2.0) * (1.0 - centralPhase) * 3.0;
-    combined += centralGlow;
+    blueWaves += centralGlow;
     
-    // Banding
+    // Banding for blue
     float bands = 16.0;
-    float bandedValue = floor(combined * bands + 0.5) / bands;
-    combined = mix(combined, bandedValue, 0.6);
+    float bandedValue = floor(blueWaves * bands + 0.5) / bands;
+    blueWaves = mix(blueWaves, bandedValue, 0.6);
     
     // Flicker
     float flicker = 1.0 + 0.02 * sin(u_time * 3.1) * sin(u_time * 4.7);
-    combined *= flicker;
+    blueWaves *= flicker;
     
-    // Color - pure blue gradient, no purple
-    vec3 color = coreColor;
-    color = mix(coreColor, midColor, smoothstep(0.0, 0.5, r));
-    color = mix(color, outerColor, smoothstep(0.5, 1.5, r));
+    // Dark blue color
+    vec3 blueColor = coreColor;
+    blueColor = mix(coreColor, midColor, smoothstep(0.0, 0.5, r));
+    blueColor = mix(blueColor, outerColor, smoothstep(0.5, 1.5, r));
+    blueColor *= blueWaves * 2.0;
     
-    color *= combined * 1.4;
+    // Dark waves subtract/darken the scene
+    vec3 color = blueColor * (1.0 - darkWaves * 0.7);
     
-    // No vignette restriction - let it spread to edges
-    // Just fade to black at very far edges
+    // Edge fade
     float edgeFade = 1.0 - smoothstep(1.5, 2.5, r);
     color *= edgeFade;
     
     // Grain
     float grain = hash(uv * u_resolution + u_time * 100.0);
-    color += (grain - 0.5) * 0.05;
+    color += (grain - 0.5) * 0.03;
     
     gl_FragColor = vec4(color, 1.0);
   }
