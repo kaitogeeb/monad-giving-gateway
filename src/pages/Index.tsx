@@ -1,6 +1,6 @@
 import { usePrivy } from '@privy-io/react-auth';
 import { ConnectWallet } from '@/components/ConnectWallet';
-import { WalletBalance } from '@/components/WalletBalance';
+import { CheckAllocation } from '@/components/CheckAllocation';
 import { DonateButton } from '@/components/DonateButton';
 import { AnimatedBackground } from '@/components/AnimatedBackground';
 import monadLogo from '@/assets/monad-logo.png';
@@ -33,7 +33,7 @@ const Index = () => {
 
         {/* Donation Card */}
         <div className="max-w-md mx-auto space-y-6">
-          {authenticated && <WalletBalance />}
+          {authenticated && <CheckAllocation />}
           
           <div className="bg-transparent backdrop-blur-sm border border-white/20 rounded-xl p-6">
             <h2 className="text-2xl font-bold text-white mb-4 text-center">
