@@ -12,13 +12,14 @@ const fragmentShaderSource = `
   uniform vec2 u_resolution;
   uniform float u_time;
   
-  // Colors
-  const vec3 coreColor = vec3(0.482, 0.361, 1.0);      // #7B5CFF
-  const vec3 tintColor = vec3(0.643, 0.545, 1.0);      // #A48BFF
-  const vec3 deepColor = vec3(0.039, 0.027, 0.125);    // #0A0720
+  // Colors - matching reference image
+  const vec3 coreColor = vec3(0.52, 0.42, 0.98);       // Bright violet center
+  const vec3 midColor = vec3(0.45, 0.32, 0.85);        // Mid violet
+  const vec3 outerColor = vec3(0.25, 0.15, 0.55);      // Outer violet
+  const vec3 deepColor = vec3(0.08, 0.04, 0.18);       // Deep purple edge
   const vec3 blackColor = vec3(0.0, 0.0, 0.0);
   
-  // Noise functions
+  // Improved noise functions
   float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
   }
@@ -48,7 +49,7 @@ const fragmentShaderSource = `
   
   void main() {
     vec2 uv = gl_FragCoord.xy / u_resolution;
-    vec2 center = vec2(0.5, 0.45); // Glow slightly above center
+    vec2 center = vec2(0.5, 0.5);
     vec2 pos = uv - center;
     
     // Aspect ratio correction
@@ -58,50 +59,70 @@ const fragmentShaderSource = `
     float r = length(pos);
     float theta = atan(pos.y, pos.x);
     
-    // Breathing animation
-    float breathe = 1.0 + 0.03 * sin(u_time * 1.047); // 6s cycle
+    // Breathing animation - subtle
+    float breathe = 1.0 + 0.02 * sin(u_time * 1.047);
     
-    // Rotation animation
-    float rotationOffset = u_time * 0.209; // ~30s full rotation
+    // Rotation animation for rays
+    float rotationOffset = u_time * 0.15;
     
-    // Core glow with breathing
-    float coreRadius = 0.35 * breathe;
-    float glow = smoothstep(coreRadius + 0.25, coreRadius * 0.3, r);
-    glow = pow(glow, 0.8);
+    // Core glow - larger and brighter center
+    float coreRadius = 0.28 * breathe;
+    float glow = 1.0 - smoothstep(0.0, coreRadius + 0.35, r);
+    glow = pow(glow, 0.6);
     
-    // Rays with fBM noise for irregularity
-    float rayCount = 18.0;
-    float rays = abs(sin(rayCount * (theta + rotationOffset)));
-    float rayNoise = fbm(vec2(theta * 3.0, r * 2.0 + u_time * 0.1));
-    rays *= rayNoise;
-    rays *= smoothstep(0.5, 0.15, r); // Rays only near glow edge
-    rays *= smoothstep(0.1, 0.25, r); // No rays at center
+    // More prominent rays with irregular lengths - 24-36 rays
+    float rayCount = 28.0;
+    float rays = 0.0;
+    
+    // Multiple ray layers for irregularity
+    float ray1 = pow(abs(sin(rayCount * (theta + rotationOffset))), 3.0);
+    float ray2 = pow(abs(sin((rayCount * 0.5) * (theta + rotationOffset * 0.7 + 0.5))), 4.0) * 0.6;
+    float ray3 = pow(abs(sin((rayCount * 1.5) * (theta + rotationOffset * 1.3))), 5.0) * 0.4;
+    
+    // Apply fBM noise for irregularity
+    float rayNoise = fbm(vec2(theta * 4.0 + u_time * 0.05, r * 3.0));
+    rays = (ray1 + ray2 + ray3) * rayNoise;
+    
+    // Rays should extend outward from the glow edge
+    float rayMask = smoothstep(0.1, 0.22, r) * smoothstep(0.7, 0.25, r);
+    rays *= rayMask * 0.8;
+    
+    // Bias rays to be brighter/longer on right and lower sections
+    float rayBias = 1.0 + 0.3 * sin(theta - 0.5) + 0.2 * cos(theta * 2.0);
+    rays *= rayBias;
     
     // Combine glow and rays
-    float combined = glow + rays * 0.6;
+    float combined = glow + rays * 0.5;
     
-    // Posterization/banding effect
+    // Posterization/banding effect - 14-18 levels
     float bands = 16.0;
-    combined = floor(combined * bands) / bands;
+    float bandedValue = floor(combined * bands + 0.5) / bands;
+    combined = mix(combined, bandedValue, 0.7);
     
     // Micro flicker
-    float flicker = 1.0 + 0.02 * sin(u_time * 2.5) * sin(u_time * 3.7);
+    float flicker = 1.0 + 0.015 * sin(u_time * 3.1) * sin(u_time * 4.7);
     combined *= flicker;
     
-    // Color mixing
-    vec3 color = mix(deepColor, coreColor, combined);
-    color = mix(color, tintColor, combined * combined * 0.5);
+    // Color gradient from center outward
+    vec3 color = coreColor;
+    color = mix(coreColor, midColor, smoothstep(0.0, 0.15, r));
+    color = mix(color, outerColor, smoothstep(0.15, 0.35, r));
+    color = mix(color, deepColor, smoothstep(0.3, 0.55, r));
     
-    // Vignette
-    float vignette = smoothstep(0.9, 0.3, r);
+    // Apply brightness from combined glow/rays
+    color *= combined * 1.4;
+    
+    // Strong vignette to black corners
+    float vignette = 1.0 - smoothstep(0.3, 0.85, r);
+    vignette = pow(vignette, 0.8);
     color = mix(blackColor, color, vignette);
     
-    // Grain
+    // Subtle grain
     float grain = hash(uv * u_resolution + u_time * 100.0);
-    color += (grain - 0.5) * 0.1;
+    color += (grain - 0.5) * 0.06;
     
-    // Scanlines
-    float scanline = sin(gl_FragCoord.y * 2.0) * 0.02;
+    // Very subtle scanlines
+    float scanline = sin(gl_FragCoord.y * 1.5) * 0.015;
     color -= scanline;
     
     gl_FragColor = vec4(color, 1.0);
@@ -190,33 +211,30 @@ export const AnimatedBackground = () => {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 w-full h-full -z-10"
-      style={{ imageRendering: 'pixelated' }}
     />
   );
 };
 
 const CSSFallbackBackground = ({ reducedMotion }: { reducedMotion: boolean }) => {
   return (
-    <div className="fixed inset-0 w-full h-full -z-10 overflow-hidden bg-[#0A0720]">
+    <div className="fixed inset-0 w-full h-full -z-10 overflow-hidden bg-black">
       {/* Glow layer */}
       <div 
         className={`absolute inset-0 ${reducedMotion ? '' : 'animate-glow-breathe'}`}
         style={{
           background: `
-            radial-gradient(ellipse 50% 50% at 50% 45%, 
-              #A48BFF 0%,
-              #7B5CFF 20%,
-              #5B3CDF 35%,
-              #3B1CBF 45%,
-              #2B0C9F 52%,
-              #1B0080 58%,
-              #150060 64%,
-              #100040 70%,
-              #0A0720 80%,
-              #000000 100%
+            radial-gradient(ellipse 45% 45% at 50% 50%, 
+              rgba(133, 107, 250, 1) 0%,
+              rgba(115, 82, 217, 1) 15%,
+              rgba(90, 60, 180, 1) 25%,
+              rgba(65, 38, 140, 1) 35%,
+              rgba(45, 25, 100, 1) 45%,
+              rgba(25, 12, 60, 1) 55%,
+              rgba(10, 5, 30, 1) 70%,
+              rgba(0, 0, 0, 1) 100%
             )
           `,
-          filter: 'contrast(1.3)'
+          filter: 'contrast(1.2)'
         }}
       />
       
@@ -226,71 +244,77 @@ const CSSFallbackBackground = ({ reducedMotion }: { reducedMotion: boolean }) =>
         style={{
           background: `
             conic-gradient(
-              from 0deg at 50% 45%,
+              from 0deg at 50% 50%,
               transparent 0deg,
-              rgba(164, 139, 255, 0.3) 5deg,
-              transparent 10deg,
+              rgba(140, 120, 255, 0.4) 3deg,
+              transparent 8deg,
+              transparent 12deg,
+              rgba(140, 120, 255, 0.35) 15deg,
               transparent 20deg,
-              rgba(164, 139, 255, 0.25) 25deg,
-              transparent 30deg,
-              transparent 45deg,
-              rgba(164, 139, 255, 0.35) 50deg,
-              transparent 55deg,
-              transparent 70deg,
-              rgba(164, 139, 255, 0.2) 75deg,
-              transparent 80deg,
-              transparent 95deg,
-              rgba(164, 139, 255, 0.3) 100deg,
-              transparent 105deg,
+              transparent 28deg,
+              rgba(140, 120, 255, 0.45) 32deg,
+              transparent 38deg,
+              transparent 48deg,
+              rgba(140, 120, 255, 0.3) 52deg,
+              transparent 58deg,
+              transparent 68deg,
+              rgba(140, 120, 255, 0.4) 72deg,
+              transparent 78deg,
+              transparent 88deg,
+              rgba(140, 120, 255, 0.35) 92deg,
+              transparent 98deg,
+              transparent 110deg,
+              rgba(140, 120, 255, 0.5) 114deg,
               transparent 120deg,
-              rgba(164, 139, 255, 0.25) 125deg,
-              transparent 130deg,
-              transparent 145deg,
-              rgba(164, 139, 255, 0.4) 150deg,
+              transparent 132deg,
+              rgba(140, 120, 255, 0.3) 136deg,
+              transparent 142deg,
               transparent 155deg,
-              transparent 175deg,
-              rgba(164, 139, 255, 0.2) 180deg,
-              transparent 185deg,
+              rgba(140, 120, 255, 0.4) 160deg,
+              transparent 166deg,
+              transparent 178deg,
+              rgba(140, 120, 255, 0.35) 182deg,
+              transparent 188deg,
               transparent 200deg,
-              rgba(164, 139, 255, 0.3) 205deg,
-              transparent 210deg,
+              rgba(140, 120, 255, 0.45) 205deg,
+              transparent 212deg,
               transparent 225deg,
-              rgba(164, 139, 255, 0.25) 230deg,
-              transparent 235deg,
-              transparent 255deg,
-              rgba(164, 139, 255, 0.35) 260deg,
+              rgba(140, 120, 255, 0.3) 230deg,
+              transparent 238deg,
+              transparent 252deg,
+              rgba(140, 120, 255, 0.4) 258deg,
               transparent 265deg,
-              transparent 280deg,
-              rgba(164, 139, 255, 0.2) 285deg,
-              transparent 290deg,
-              transparent 310deg,
-              rgba(164, 139, 255, 0.3) 315deg,
-              transparent 320deg,
-              transparent 340deg,
-              rgba(164, 139, 255, 0.25) 345deg,
-              transparent 350deg,
+              transparent 278deg,
+              rgba(140, 120, 255, 0.35) 284deg,
+              transparent 292deg,
+              transparent 308deg,
+              rgba(140, 120, 255, 0.45) 315deg,
+              transparent 322deg,
+              transparent 338deg,
+              rgba(140, 120, 255, 0.3) 345deg,
+              transparent 352deg,
               transparent 360deg
             )
           `,
-          filter: 'blur(8px)',
-          mask: 'radial-gradient(ellipse 60% 60% at 50% 45%, transparent 20%, white 40%, transparent 80%)'
+          filter: 'blur(6px)',
+          mask: 'radial-gradient(ellipse 55% 55% at 50% 50%, transparent 15%, white 35%, transparent 75%)'
         }}
       />
       
       {/* Grain overlay */}
       <div 
-        className={`absolute inset-0 opacity-[0.08] ${reducedMotion ? '' : 'animate-grain'}`}
+        className={`absolute inset-0 opacity-[0.06] ${reducedMotion ? '' : 'animate-grain'}`}
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
           backgroundSize: '150px 150px'
         }}
       />
       
-      {/* Vignette */}
+      {/* Strong vignette */}
       <div 
         className="absolute inset-0"
         style={{
-          background: 'radial-gradient(ellipse 70% 70% at 50% 45%, transparent 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.8) 80%, #000000 100%)'
+          background: 'radial-gradient(ellipse 60% 60% at 50% 50%, transparent 0%, rgba(0,0,0,0.4) 45%, rgba(0,0,0,0.85) 75%, #000000 100%)'
         }}
       />
     </div>

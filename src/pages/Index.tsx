@@ -12,11 +12,11 @@ const Index = () => {
     <div className="min-h-screen relative">
       <AnimatedBackground />
       {/* Header */}
-      <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
+      <header className="sticky top-0 z-50 bg-transparent">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Heart className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold text-foreground">CharityDonate</span>
+            <span className="text-xl font-bold text-foreground">MONAD</span>
           </div>
           <ConnectWallet />
         </div>
@@ -36,17 +36,17 @@ const Index = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-6 text-center">
+          <div className="bg-transparent backdrop-blur-sm border border-white/20 rounded-xl p-6 text-center">
             <Users className="h-10 w-10 text-primary mx-auto mb-3" />
             <div className="text-3xl font-bold text-foreground">1,234</div>
             <div className="text-muted-foreground">Active Donors</div>
           </div>
-          <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-6 text-center">
+          <div className="bg-transparent backdrop-blur-sm border border-white/20 rounded-xl p-6 text-center">
             <Heart className="h-10 w-10 text-primary mx-auto mb-3" />
             <div className="text-3xl font-bold text-foreground">50,000</div>
             <div className="text-muted-foreground">MON Donated</div>
           </div>
-          <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-6 text-center">
+          <div className="bg-transparent backdrop-blur-sm border border-white/20 rounded-xl p-6 text-center">
             <Globe className="h-10 w-10 text-primary mx-auto mb-3" />
             <div className="text-3xl font-bold text-foreground">25</div>
             <div className="text-muted-foreground">Projects Funded</div>
@@ -57,7 +57,7 @@ const Index = () => {
         <div className="max-w-md mx-auto space-y-6">
           {authenticated && <WalletBalance />}
           
-          <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-6">
+          <div className="bg-transparent backdrop-blur-sm border border-white/20 rounded-xl p-6">
             <h2 className="text-2xl font-bold text-foreground mb-4 text-center">
               {authenticated ? 'Ready to Donate?' : 'Connect to Start'}
             </h2>
@@ -78,9 +78,9 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 mt-20 py-8">
+      <footer className="border-t border-white/10 mt-20 py-8 bg-transparent">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <p>© 2024 CharityDonate. Built on Monad.</p>
+          <p>© 2024 MONAD. Built on Monad.</p>
         </div>
       </footer>
     </div>
