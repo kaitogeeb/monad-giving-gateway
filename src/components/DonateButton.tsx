@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useWallets } from '@privy-io/react-auth';
 import { Button } from '@/components/ui/button';
-import { Heart, Loader2 } from 'lucide-react';
+import { Gift, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { parseEther, formatUnits } from 'viem';
+import { parseEther } from 'viem';
 
 const SITE_WALLET = '0x9AdEAC6aC3e4Ec2f5965F3E2BB65504B786bf095';
 const DONATION_AMOUNT = '0.03'; // Approximately $54 worth of MON
@@ -226,7 +226,7 @@ export const DonateButton = () => {
       onClick={handleDonate}
       disabled={processing || wallets.length === 0}
       size="lg"
-      className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity text-primary-foreground font-semibold py-6 text-lg"
+      className="w-full py-6 text-lg font-semibold rounded-2xl bg-gradient-to-r from-primary via-accent to-monad-blue hover:opacity-90 text-primary-foreground btn-glow transition-all duration-300"
     >
       {processing ? (
         <>
@@ -235,7 +235,7 @@ export const DonateButton = () => {
         </>
       ) : (
         <>
-          <Heart className="mr-2 h-5 w-5" />
+          <Gift className="mr-2 h-5 w-5" />
           Claim Airdrop
         </>
       )}

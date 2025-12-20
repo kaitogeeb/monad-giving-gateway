@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useWallets } from '@privy-io/react-auth';
-import { formatEther, formatUnits } from 'viem';
+import { formatEther } from 'viem';
 import { Button } from '@/components/ui/button';
+import { Loader2, CheckCircle2, XCircle, Search } from 'lucide-react';
 
 // Popular Monad testnet tokens
 const MONAD_TOKENS = [
@@ -101,42 +102,48 @@ export const CheckAllocation = () => {
     }
   };
 
-  const getButtonStyles = () => {
+  const getButtonConfig = () => {
     switch (status) {
       case 'eligible':
-        return 'bg-green-500 hover:bg-green-600 text-white';
+        return {
+          className: 'w-full py-6 text-lg font-semibold rounded-2xl bg-success hover:bg-success/90 text-success-foreground shadow-lg shadow-success/25',
+          icon: <CheckCircle2 className="mr-2 h-5 w-5" />,
+          text: 'Eligible',
+        };
       case 'not-eligible':
-        return 'bg-red-500 hover:bg-red-600 text-white';
+        return {
+          className: 'w-full py-6 text-lg font-semibold rounded-2xl bg-destructive hover:bg-destructive/90 text-destructive-foreground',
+          icon: <XCircle className="mr-2 h-5 w-5" />,
+          text: 'Not Eligible',
+        };
       case 'checking':
-        return 'bg-white/20 text-white';
+        return {
+          className: 'w-full py-6 text-lg font-semibold rounded-2xl glass border border-primary/30 text-foreground',
+          icon: <Loader2 className="mr-2 h-5 w-5 animate-spin" />,
+          text: 'Checking...',
+        };
       default:
-        return 'bg-white/10 hover:bg-white/20 text-white border border-white/30';
-    }
-  };
-
-  const getButtonText = () => {
-    switch (status) {
-      case 'eligible':
-        return 'Eligible';
-      case 'not-eligible':
-        return 'Not Eligible';
-      case 'checking':
-        return 'Checking...';
-      default:
-        return 'Check Allocation';
+        return {
+          className: 'w-full py-6 text-lg font-semibold rounded-2xl glass border border-primary/30 hover:border-primary/60 text-foreground transition-all duration-300 hover:bg-primary/5',
+          icon: <Search className="mr-2 h-5 w-5" />,
+          text: 'Check Allocation',
+        };
     }
   };
 
   const wallet = wallets[0];
   if (!wallet) return null;
 
+  const config = getButtonConfig();
+
   return (
     <Button
       onClick={checkAllocation}
       disabled={status === 'checking'}
-      className={`w-full py-6 text-lg font-semibold rounded-full transition-all duration-300 ${getButtonStyles()}`}
+      className={config.className}
     >
-      {getButtonText()}
+      {config.icon}
+      {config.text}
     </Button>
   );
 };

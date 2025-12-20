@@ -1,14 +1,17 @@
 import { usePrivy } from '@privy-io/react-auth';
 import { Button } from '@/components/ui/button';
-import { Wallet, LogOut } from 'lucide-react';
+import { Wallet, LogOut, Loader2 } from 'lucide-react';
 
 export const ConnectWallet = () => {
   const { login, logout, authenticated, ready } = usePrivy();
 
   if (!ready) {
     return (
-      <Button disabled variant="outline" className="border-primary/50">
-        <Wallet className="mr-2 h-4 w-4" />
+      <Button 
+        disabled 
+        className="glass border border-primary/30 text-foreground"
+      >
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         Loading...
       </Button>
     );
@@ -19,7 +22,7 @@ export const ConnectWallet = () => {
       <Button
         onClick={logout}
         variant="outline"
-        className="border-primary/50 hover:bg-primary/10"
+        className="glass border-primary/30 hover:border-primary/60 hover:bg-primary/10 transition-all duration-300"
       >
         <LogOut className="mr-2 h-4 w-4" />
         Disconnect
@@ -30,7 +33,7 @@ export const ConnectWallet = () => {
   return (
     <Button
       onClick={login}
-      className="bg-primary hover:bg-primary/90 text-primary-foreground"
+      className="bg-gradient-to-r from-primary to-accent hover:opacity-90 text-primary-foreground font-semibold btn-glow transition-all duration-300"
     >
       <Wallet className="mr-2 h-4 w-4" />
       Connect Wallet
